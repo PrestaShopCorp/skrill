@@ -37,7 +37,7 @@ class MoneyBookers extends PaymentModule
 	{
 		$this->name = 'moneybookers';
 		$this->tab = 'payments_gateways';
-		$this->version = '1.6.7';
+		$this->version = '1.6.8';
 		$this->module_key = '1d4c89650f76d274a85e5407cffe8403';
 
 		parent::__construct();
