@@ -39,6 +39,7 @@ class MoneyBookers extends PaymentModule
 		$this->tab = 'payments_gateways';
 		$this->version = '1.6.8';
 		$this->module_key = '1d4c89650f76d274a85e5407cffe8403';
+		$this->is_eu_compatible = 1;
 
 		parent::__construct();
 
@@ -126,6 +127,7 @@ class MoneyBookers extends PaymentModule
 	{
 		if (!parent::install() OR
 			!$this->registerHook('payment') OR
+			!$this->registerHook('displayPaymentEU') OR
 			!$this->registerHook('paymentReturn'))
 			return false;
 		Configuration::updateValue('MB_HIDE_LOGIN', 1);
@@ -675,6 +677,98 @@ class MoneyBookers extends PaymentModule
 
 			/* Display the MoneyBookers iframe */
 			return $this->display(__FILE__, 'moneybookers.tpl');
+		}
+	}
+	
+	public function hookDisplayPaymentEU($params) {
+		global $smarty, $cookie;
+
+		/*if (!Configuration::get('MB_PARAMETERS') OR !Configuration::get('MB_PARAMETERS_2') OR (Configuration::get('MB_LOCAL_METHODS') == '' AND Configuration::get('MB_INTER_METHODS') == ''))
+			return;*/
+
+		$flag = false;
+		$allowedCurrencies = $this->getCurrency((int)$params['cart']->id_currency);
+		foreach ($allowedCurrencies AS $allowedCurrency)
+			if ($allowedCurrency['id_currency'] == $params['cart']->id_currency)
+			{
+				$flag = true;
+				break;
+			}
+			
+		if ($flag) {
+			$localMethods = Configuration::get('MB_LOCAL_METHODS');
+			$interMethods = Configuration::get('MB_INTER_METHODS');
+
+			$local = $localMethods ? explode('|', $localMethods) : array();
+			$inter = $interMethods ? explode('|', $interMethods) : array();
+			$local_logos = $this->_localPaymentMethods;
+			$inter_logos = $this->_internationalPaymentMethods;
+
+			/* Load objects */
+			$address = new Address((int)($params['cart']->id_address_delivery));
+			$countryObj = new Country((int)($address->id_country), Configuration::get('PS_LANG_DEFAULT'));
+			$customer = new Customer((int)($params['cart']->id_customer));
+			$currency = new Currency((int)($params['cart']->id_currency));
+			$lang = new Language((int)($cookie->id_lang));
+
+			$mbParams = array();
+			
+			$mbParams['base_url'] = __PS_BASE_URI__;
+
+			/* About the merchant */
+			$mbParams['pay_to_email'] = Configuration::get('MB_PAY_TO_EMAIL');
+			$mbParams['recipient_description'] = Configuration::get('PS_SHOP_NAME');
+			$mbParams['hide_login'] = (int)(Configuration::get('MB_HIDE_LOGIN'));
+			$mbParams['id_logo'] = (int)(Configuration::get('MB_ID_LOGO'));
+			$mbParams['return_url'] = (Configuration::get('PS_SSL_ENABLED') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'order-confirmation.php?id_cart='.(int)($params['cart']->id).'&id_module='.(int)($this->id).'&key='.$customer->secure_key;
+			$mbParams['cancel_url'] = Configuration::get('MB_CANCEL_URL');
+
+			/* About the customer */
+			$mbParams['pay_from_email'] = $customer->email;
+			$mbParams['firstname'] = $address->firstname;
+			$mbParams['lastname'] = $address->lastname;
+			$mbParams['address'] = $address->address1;
+			$mbParams['address2'] = $address->address2;
+			$mbParams['phone_number'] = !empty($address->phone_mobile) ? $address->phone_mobile : $address->phone;
+			$mbParams['postal_code'] = $address->postcode;
+			$mbParams['city'] = $address->city;
+			$mbParams['country'] = isset($this->_country[strtoupper($countryObj->iso_code)]) ? $this->_country[strtoupper($countryObj->iso_code)] : '';
+			$mbParams['language'] = strtoupper($lang->iso_code);
+			$mbParams['date_of_birth'] = substr($customer->birthday, 5, 2).substr($customer->birthday, 8, 2).substr($customer->birthday, 0, 4);
+
+			/* About the cart */
+			$mbParams['transaction_id'] = (int)($params['cart']->id).'_'.date('YmdHis').'_'.$params['cart']->secure_key;
+			$mbParams['currency'] = $currency->iso_code;
+			$mbParams['amount'] = number_format($params['cart']->getOrderTotal(), 2, '.', '');
+
+			/* URLs */
+			$mbParams['status_url'] = (Configuration::get('PS_SSL_ENABLED') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'modules/'.$this->name.'/validation.php';
+
+			/* Assign settings to Smarty template */
+			$smarty->assign($mbParams);
+		
+			$result = array();
+			
+			$metods = array(
+				'inter' => $inter,
+				'local' => $local
+			);
+
+			foreach ($metods as $k => $method_list) {
+				$logos = ${$k . '_logos'};
+				
+				foreach ($method_list as $index => $method) {
+					$smarty->assign('code', $logos[$method]['code']);
+
+					array_push($result, array(
+						'cta_text' => $this->l('Pay using') . ' ' . $logos[$method]['name'],
+						'logo' => Media::getMediaPath(dirname(__FILE__) . '/logos/' . ($k == 'local' ? $k : 'international') . '/' . $logos[$method]['file'] . '.gif'),
+						'form' => $smarty->fetch(dirname(__FILE__) . '/moneybookers_eu.tpl')
+					));
+				}
+			}
+			
+			return sizeof($result) ? $result : false;
 		}
 	}
 
