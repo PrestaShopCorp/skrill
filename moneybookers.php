@@ -598,6 +598,76 @@ class MoneyBookers extends PaymentModule
 		return $this->_displayLogoBlock(self::LEFT_COLUMN);
 	}
 
+    private function hasAllowedCurrencies($params) {
+        $allowedCurrencies = $this->getCurrency((int)$params['cart']->id_currency);
+        foreach ($allowedCurrencies AS $allowedCurrency)
+            if ($allowedCurrency['id_currency'] == $params['cart']->id_currency)
+                return true;
+
+        return false;
+    }
+
+    private function getMoneybookersPaymentOptions($params) {
+        global $smarty, $cookie;
+
+        $localMethods = Configuration::get('MB_LOCAL_METHODS');
+        $interMethods = Configuration::get('MB_INTER_METHODS');
+
+        $local = $localMethods ? explode('|', $localMethods) : array();
+        $inter = $interMethods ? explode('|', $interMethods) : array();
+        $local_logos = $this->_localPaymentMethods;
+        $inter_logos = $this->_internationalPaymentMethods;
+
+        /* Load objects */
+        $address = new Address((int)($params['cart']->id_address_delivery));
+        $countryObj = new Country((int)($address->id_country), Configuration::get('PS_LANG_DEFAULT'));
+        $customer = new Customer((int)($params['cart']->id_customer));
+        $currency = new Currency((int)($params['cart']->id_currency));
+        $lang = new Language((int)($cookie->id_lang));
+
+        $mbParams = array();
+
+        $mbParams['base_url'] = __PS_BASE_URI__;
+
+        /* About the merchant */
+        $mbParams['pay_to_email'] = Configuration::get('MB_PAY_TO_EMAIL');
+        $mbParams['recipient_description'] = Configuration::get('PS_SHOP_NAME');
+        $mbParams['hide_login'] = (int)(Configuration::get('MB_HIDE_LOGIN'));
+        $mbParams['id_logo'] = (int)(Configuration::get('MB_ID_LOGO'));
+        $mbParams['return_url'] = (Configuration::get('PS_SSL_ENABLED') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'order-confirmation.php?id_cart='.(int)($params['cart']->id).'&id_module='.(int)($this->id).'&key='.$customer->secure_key;
+        $mbParams['cancel_url'] = Configuration::get('MB_CANCEL_URL');
+
+        /* About the customer */
+        $mbParams['pay_from_email'] = $customer->email;
+        $mbParams['firstname'] = $address->firstname;
+        $mbParams['lastname'] = $address->lastname;
+        $mbParams['address'] = $address->address1;
+        $mbParams['address2'] = $address->address2;
+        $mbParams['phone_number'] = !empty($address->phone_mobile) ? $address->phone_mobile : $address->phone;
+        $mbParams['postal_code'] = $address->postcode;
+        $mbParams['city'] = $address->city;
+        $mbParams['country'] = isset($this->_country[strtoupper($countryObj->iso_code)]) ? $this->_country[strtoupper($countryObj->iso_code)] : '';
+        $mbParams['language'] = strtoupper($lang->iso_code);
+        $mbParams['date_of_birth'] = substr($customer->birthday, 5, 2).substr($customer->birthday, 8, 2).substr($customer->birthday, 0, 4);
+
+        /* About the cart */
+        $mbParams['transaction_id'] = (int)($params['cart']->id).'_'.date('YmdHis').'_'.$params['cart']->secure_key;
+        $mbParams['currency'] = $currency->iso_code;
+        $mbParams['amount'] = number_format($params['cart']->getOrderTotal(), 2, '.', '');
+
+        /* URLs */
+        $mbParams['status_url'] = (Configuration::get('PS_SSL_ENABLED') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'modules/'.$this->name.'/validation.php';
+
+        /* Assign settings to Smarty template */
+        $smarty->assign($mbParams);
+
+        $methods = array(
+            'inter' => $inter,
+            'local' => $local
+        );
+
+        return $methods;
+    }
 
 	public function hookPayment($params)
 	{
@@ -606,74 +676,14 @@ class MoneyBookers extends PaymentModule
 		if (!Configuration::get('MB_PARAMETERS') OR !Configuration::get('MB_PARAMETERS_2') OR (Configuration::get('MB_LOCAL_METHODS') == '' AND Configuration::get('MB_INTER_METHODS') == ''))
 			return;
 
-		$flag = false;
-		$allowedCurrencies = $this->getCurrency((int)$params['cart']->id_currency);
-		foreach ($allowedCurrencies AS $allowedCurrency)
-			if ($allowedCurrency['id_currency'] == $params['cart']->id_currency)
-			{
-				$flag = true;
-				break;
-			}
-
-		if (!$flag)
+		if (!$this->hasAllowedCurrencies($params))
 		{
 			/* Uncomment the line below if you'd like to display an error message, rather than not showing the Moneybookers module */
 			// return $this->display(__FILE__, 'moneybookers-currency-error.tpl');
 		}
 		else
 		{
-			$localMethods = Configuration::get('MB_LOCAL_METHODS');
-			$interMethods = Configuration::get('MB_INTER_METHODS');
-
-			$smarty->assign(array(
-			'display_mode' => (int)(Configuration::get('MB_DISPLAY_MODE')),
-			'local' => $localMethods ? explode('|', $localMethods) : array(),
-			'inter' => $interMethods ? explode('|', $interMethods) : array(),
-			'local_logos' => $this->_localPaymentMethods,
-			'inter_logos' => $this->_internationalPaymentMethods));
-
-			/* Load objects */
-			$address = new Address((int)($params['cart']->id_address_delivery));
-			$countryObj = new Country((int)($address->id_country), Configuration::get('PS_LANG_DEFAULT'));
-			$customer = new Customer((int)($params['cart']->id_customer));
-			$currency = new Currency((int)($params['cart']->id_currency));
-			$lang = new Language((int)($cookie->id_lang));
-
-			$mbParams = array();
-			
-			$mbParams['base_url'] = __PS_BASE_URI__;
-
-			/* About the merchant */
-			$mbParams['pay_to_email'] = Configuration::get('MB_PAY_TO_EMAIL');
-			$mbParams['recipient_description'] = Configuration::get('PS_SHOP_NAME');
-			$mbParams['hide_login'] = (int)(Configuration::get('MB_HIDE_LOGIN'));
-			$mbParams['id_logo'] = (int)(Configuration::get('MB_ID_LOGO'));
-			$mbParams['return_url'] = (Configuration::get('PS_SSL_ENABLED') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'index.php?controller=order-confirmation?id_cart='.(int)($params['cart']->id).'&id_module='.(int)($this->id).'&key='.$customer->secure_key;
-			$mbParams['cancel_url'] = Configuration::get('MB_CANCEL_URL');
-
-			/* About the customer */
-			$mbParams['pay_from_email'] = $customer->email;
-			$mbParams['firstname'] = $address->firstname;
-			$mbParams['lastname'] = $address->lastname;
-			$mbParams['address'] = $address->address1;
-			$mbParams['address2'] = $address->address2;
-			$mbParams['phone_number'] = !empty($address->phone_mobile) ? $address->phone_mobile : $address->phone;
-			$mbParams['postal_code'] = $address->postcode;
-			$mbParams['city'] = $address->city;
-			$mbParams['country'] = isset($this->_country[strtoupper($countryObj->iso_code)]) ? $this->_country[strtoupper($countryObj->iso_code)] : '';
-			$mbParams['language'] = strtoupper($lang->iso_code);
-			$mbParams['date_of_birth'] = substr($customer->birthday, 5, 2).substr($customer->birthday, 8, 2).substr($customer->birthday, 0, 4);
-
-			/* About the cart */
-			$mbParams['transaction_id'] = (int)($params['cart']->id).'_'.date('YmdHis').'_'.$params['cart']->secure_key;
-			$mbParams['currency'] = $currency->iso_code;
-			$mbParams['amount'] = number_format($params['cart']->getOrderTotal(), 2, '.', '');
-
-			/* URLs */
-			$mbParams['status_url'] = (Configuration::get('PS_SSL_ENABLED') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'modules/'.$this->name.'/validation.php';
-
-			/* Assign settings to Smarty template */
-			$smarty->assign($mbParams);
+            $this->getMoneybookersPaymentOptions($params);
 
 			/* Display the MoneyBookers iframe */
 			return $this->display(__FILE__, 'moneybookers.tpl');
@@ -681,83 +691,20 @@ class MoneyBookers extends PaymentModule
 	}
 	
 	public function hookDisplayPaymentEU($params) {
-		global $smarty, $cookie;
+		global $smarty;
 
-		/*if (!Configuration::get('MB_PARAMETERS') OR !Configuration::get('MB_PARAMETERS_2') OR (Configuration::get('MB_LOCAL_METHODS') == '' AND Configuration::get('MB_INTER_METHODS') == ''))
-			return;*/
+		if (!Configuration::get('MB_PARAMETERS') OR !Configuration::get('MB_PARAMETERS_2') OR (Configuration::get('MB_LOCAL_METHODS') == '' AND Configuration::get('MB_INTER_METHODS') == ''))
+			return;
 
-		$flag = false;
-		$allowedCurrencies = $this->getCurrency((int)$params['cart']->id_currency);
-		foreach ($allowedCurrencies AS $allowedCurrency)
-			if ($allowedCurrency['id_currency'] == $params['cart']->id_currency)
-			{
-				$flag = true;
-				break;
-			}
-			
-		if ($flag) {
-			$localMethods = Configuration::get('MB_LOCAL_METHODS');
-			$interMethods = Configuration::get('MB_INTER_METHODS');
-
-			$local = $localMethods ? explode('|', $localMethods) : array();
-			$inter = $interMethods ? explode('|', $interMethods) : array();
-			$local_logos = $this->_localPaymentMethods;
-			$inter_logos = $this->_internationalPaymentMethods;
-
-			/* Load objects */
-			$address = new Address((int)($params['cart']->id_address_delivery));
-			$countryObj = new Country((int)($address->id_country), Configuration::get('PS_LANG_DEFAULT'));
-			$customer = new Customer((int)($params['cart']->id_customer));
-			$currency = new Currency((int)($params['cart']->id_currency));
-			$lang = new Language((int)($cookie->id_lang));
-
-			$mbParams = array();
-			
-			$mbParams['base_url'] = __PS_BASE_URI__;
-
-			/* About the merchant */
-			$mbParams['pay_to_email'] = Configuration::get('MB_PAY_TO_EMAIL');
-			$mbParams['recipient_description'] = Configuration::get('PS_SHOP_NAME');
-			$mbParams['hide_login'] = (int)(Configuration::get('MB_HIDE_LOGIN'));
-			$mbParams['id_logo'] = (int)(Configuration::get('MB_ID_LOGO'));
-			$mbParams['return_url'] = (Configuration::get('PS_SSL_ENABLED') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'order-confirmation.php?id_cart='.(int)($params['cart']->id).'&id_module='.(int)($this->id).'&key='.$customer->secure_key;
-			$mbParams['cancel_url'] = Configuration::get('MB_CANCEL_URL');
-
-			/* About the customer */
-			$mbParams['pay_from_email'] = $customer->email;
-			$mbParams['firstname'] = $address->firstname;
-			$mbParams['lastname'] = $address->lastname;
-			$mbParams['address'] = $address->address1;
-			$mbParams['address2'] = $address->address2;
-			$mbParams['phone_number'] = !empty($address->phone_mobile) ? $address->phone_mobile : $address->phone;
-			$mbParams['postal_code'] = $address->postcode;
-			$mbParams['city'] = $address->city;
-			$mbParams['country'] = isset($this->_country[strtoupper($countryObj->iso_code)]) ? $this->_country[strtoupper($countryObj->iso_code)] : '';
-			$mbParams['language'] = strtoupper($lang->iso_code);
-			$mbParams['date_of_birth'] = substr($customer->birthday, 5, 2).substr($customer->birthday, 8, 2).substr($customer->birthday, 0, 4);
-
-			/* About the cart */
-			$mbParams['transaction_id'] = (int)($params['cart']->id).'_'.date('YmdHis').'_'.$params['cart']->secure_key;
-			$mbParams['currency'] = $currency->iso_code;
-			$mbParams['amount'] = number_format($params['cart']->getOrderTotal(), 2, '.', '');
-
-			/* URLs */
-			$mbParams['status_url'] = (Configuration::get('PS_SSL_ENABLED') ? 'https' : 'http').'://'.$_SERVER['HTTP_HOST'].__PS_BASE_URI__.'modules/'.$this->name.'/validation.php';
-
-			/* Assign settings to Smarty template */
-			$smarty->assign($mbParams);
-		
+		if ($this->hasAllowedCurrencies()) {
 			$result = array();
 			
-			$metods = array(
-				'inter' => $inter,
-				'local' => $local
-			);
+			$methods = $this->getMoneybookersPaymentOptions($params);
 
-			foreach ($metods as $k => $method_list) {
+			foreach ($methods as $k => $method_list) {
 				$logos = ${$k . '_logos'};
 				
-				foreach ($method_list as $index => $method) {
+				foreach ($method_list as $method) {
 					$smarty->assign('code', $logos[$method]['code']);
 
 					array_push($result, array(
@@ -768,7 +715,7 @@ class MoneyBookers extends PaymentModule
 				}
 			}
 			
-			return sizeof($result) ? $result : false;
+			return count($result) ? $result : false;
 		}
 	}
 
