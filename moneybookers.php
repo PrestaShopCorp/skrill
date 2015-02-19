@@ -618,6 +618,13 @@ class MoneyBookers extends PaymentModule
         $local_logos = $this->_localPaymentMethods;
         $inter_logos = $this->_internationalPaymentMethods;
 
+		$smarty->assign(array(
+			'display_mode' => (int)(Configuration::get('MB_DISPLAY_MODE')),
+			'local' => $local,
+			'inter' => $inter,
+			'local_logos' => $local_logos,
+			'inter_logos' => $inter_logos));
+
         /* Load objects */
         $address = new Address((int)($params['cart']->id_address_delivery));
         $countryObj = new Country((int)($address->id_country), Configuration::get('PS_LANG_DEFAULT'));
@@ -662,8 +669,8 @@ class MoneyBookers extends PaymentModule
         $smarty->assign($mbParams);
 
         $methods = array(
-            'inter' => $inter,
-            'local' => $local
+            'methods' => array('inter' => $inter,  'local' => $local),
+			'logos' => array('inter' => $inter_logos ,'local' => $local_logos)
         );
 
         return $methods;
@@ -701,20 +708,24 @@ class MoneyBookers extends PaymentModule
 			
 			$methods = $this->getMoneybookersPaymentOptions($params);
 
-			foreach ($methods as $k => $method_list) {
-				$logos = ${$k . '_logos'};
-				
-				foreach ($method_list as $method) {
-					$smarty->assign('code', $logos[$method]['code']);
+			if (isset($methods['methods']) && isset($methods['logos']))
+			{
+				foreach ($methods['methods'] as $k => $method_list)
+				{
+					$logos = $methods['logos'][$k];
 
-					array_push($result, array(
-						'cta_text' => $this->l('Pay using') . ' ' . $logos[$method]['name'],
-						'logo' => Media::getMediaPath(dirname(__FILE__) . '/logos/' . ($k == 'local' ? $k : 'international') . '/' . $logos[$method]['file'] . '.gif'),
-						'form' => $smarty->fetch(dirname(__FILE__) . '/moneybookers_eu.tpl')
-					));
+					foreach ($method_list as $method)
+					{
+						$smarty->assign('code', $logos[$method]['code']);
+
+						array_push($result, array(
+							'cta_text' => $this->l('Pay using') . ' ' . $logos[$method]['name'],
+							'logo' => Media::getMediaPath(dirname(__FILE__) . '/logos/' . ($k == 'local' ? $k : 'international') . '/' . $logos[$method]['file'] . '.gif'),
+							'form' => $smarty->fetch(dirname(__FILE__) . '/moneybookers_eu.tpl')
+						));
+					}
 				}
 			}
-			
 			return count($result) ? $result : false;
 		}
 	}
