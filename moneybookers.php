@@ -703,7 +703,7 @@ class MoneyBookers extends PaymentModule
 		if (!Configuration::get('MB_PARAMETERS') OR !Configuration::get('MB_PARAMETERS_2') OR (Configuration::get('MB_LOCAL_METHODS') == '' AND Configuration::get('MB_INTER_METHODS') == ''))
 			return;
 
-		if ($this->hasAllowedCurrencies()) {
+		if ($this->hasAllowedCurrencies($params)) {
 			$result = array();
 			
 			$methods = $this->getMoneybookersPaymentOptions($params);
