@@ -122,6 +122,8 @@ class SkrillPaymentAbstractModuleFrontController extends ModuleFrontController
         $postParameters['amount'] = $this->context->cart->getOrderTotal(true, Cart::BOTH);
         $postParameters['currency'] = $currencyobj->iso_code;
         $postParameters['detail1_description'] = "Order pay from ".$this->context->customer->email;
+        $postParameters['Platform ID'] = '21445510';
+        $postParameters['Developer'] = 'Payreto';
         if ($paymentMethod != 'FLEXIBLE') {
             $postParameters['payment_methods'] = $paymentMethod;
         }
@@ -132,9 +134,13 @@ class SkrillPaymentAbstractModuleFrontController extends ModuleFrontController
     {
         $langobj = new Language((int)$this->context->cart->id_lang);
         $langs = $langobj->iso_code;
-
+ 
         switch ($langs) {
             case 'de':
+            case 'pl':
+            case 'it':
+            case 'fr':
+            case 'es':
                 return $langs;
         }
         return 'en';

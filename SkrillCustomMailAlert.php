@@ -57,7 +57,7 @@ class SkrillCustomMailAlert extends ObjectModel
 
         $sql = '
            SELECT *
-           FROM `'._DB_PREFIX_.self::$definition['table'].'`
+           FROM `'.bqSQL(_DB_PREFIX_.self::$definition['table']).'`
            WHERE (`id_customer` = '.(int)$id_customer.' OR `customer_email` = \''.pSQL($customer_email).'\')
            AND `id_product` = '.(int)$id_product.'
            AND `id_product_attribute` = '.(int)$id_product_attribute.'
@@ -69,7 +69,7 @@ class SkrillCustomMailAlert extends ObjectModel
     public static function deleteAlert($id_customer, $customer_email, $id_product, $id_product_attribute)
     {
         $sql = '
-            DELETE FROM `'._DB_PREFIX_.self::$definition['table'].'`
+            DELETE FROM `'.bqSQL(_DB_PREFIX_.self::$definition['table']).'`
             WHERE '.(($id_customer > 0) ? '(`customer_email` = \'
                 '.pSQL($customer_email).'\' OR `id_customer` = '.(int)$id_customer.')' :
             '`customer_email` = \''.pSQL($customer_email).'\'').
@@ -225,7 +225,7 @@ class SkrillCustomMailAlert extends ObjectModel
     {
         $sql = '
             SELECT ma.`id_product`, p.`quantity` AS product_quantity, pl.`name`, ma.`id_product_attribute`
-            FROM `'._DB_PREFIX_.self::$definition['table'].'` ma
+            FROM `'.bqSQL(_DB_PREFIX_.self::$definition['table']).'` ma
             JOIN `'._DB_PREFIX_.'product` p ON (p.`id_product` = ma.`id_product`)
             '.Shop::addSqlAssociation('product', 'p').'
             LEFT JOIN `'._DB_PREFIX_.'product_lang` pl ON (pl.`id_product` = p.`id_product` AND
@@ -265,7 +265,7 @@ class SkrillCustomMailAlert extends ObjectModel
     {
         $sql = '
             SELECT id_customer, customer_email
-            FROM `'._DB_PREFIX_.self::$definition['table'].'`
+            FROM `'.bqSQL(_DB_PREFIX_.self::$definition['table']).'`
             WHERE `id_product` = '.(int)$id_product.' AND `id_product_attribute` = '.(int)$id_product_attribute;
 
         return Db::getInstance(_PS_USE_SQL_SLAVE_)->executeS($sql);

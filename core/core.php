@@ -51,10 +51,6 @@ class SkrillPaymentCore
                  'name' => 'MasterCard',
                  'countries'  => 'ALL'
             ),
-            'VSD' => array(
-                 'name' => 'Visa Delta/Debit',
-                 'countries'  => 'GBR'
-            ),
             'VSE' => array(
                  'name' => 'Visa Electron',
                  'countries'  => 'AFG,ALB,DZA,ASM,AND,AGO,AIA,ATA,ATG,ARG,ARM,ABW,AUS,AUT,
@@ -70,7 +66,7 @@ class SkrillPaymentCore
                  QAT,ROU,RUS,RWA,REU,BLM,SHN,KNA,LCA,MAF,SPM,WSM,SMR,SAU,SEN,SRB,SYC,SLE,
                  SGP,SVK,SVN,SLB,SOM,ZAF,SGS,KOR,ESP,LKA,VCT,SDN,SUR,SJM,SWZ,SWE,CHE,SYR,
                  STP,TWN,TJK,TZA,THA,TLS,TGO,TKL,TON,TTO,TUN,TUR,TKM,TCA,TUV,UMI,VIR,UGA,
-                 UKR,ARE,GBR,USA,URY,UZB,VUT,GUY,VEN,VNM,WLF,ESH,YEM,ZMB,ZWE,ALA'
+                 UKR,ARE,GBR,USA,URY,UZB,VUT,GUY,VEN,VNM,WLF,ESH,YEM,ZMB,ZWE,ALA,SSD'
             ),
             'MAE' => array(
                  'name' => 'Maestro',
@@ -78,52 +74,15 @@ class SkrillPaymentCore
             ),
             'AMX' => array(
                  'name' => 'American Express',
-                 'countries'  => 'AFG,ALB,DZA,ASM,AND,AGO,AIA,ATA,ATG,ARG,ARM,ABW,AUS,AUT,AZE,
-                 BHS,BHR,BGD,BRB,BLR,BEL,BLZ,BEN,BMU,BTN,BOL,BIH,BWA,BVT,BRA,IOT,VGB,BRN,BGR,
-                 BFA,BDI,KHM,CMR,CAN,CPV,CYM,CAF,TCD,CHL,CHN,CXR,CCK,COL,COM,COG,COD,COK,CRI,
-                 HRV,CUB,CYP,CZE,CIV,DNK,DJI,DMA,DOM,ECU,EGY,SLV,GNQ,ERI,EST,ETH,FLK,FRO,FJI,
-                 FIN,FRA,GUF,PYF,ATF,GAB,GMB,GEO,DEU,GHA,GIB,GRC,GRL,GRD,GLD,GUM,GTM,GGY,HTI,
-                 HMD,VAT,GIN,GNB,HND,HKG,HUN,ISL,IND,IDN,IRN,IRQ,IRL,IMN,ISR,ITA,JAM,JPN,JEY,
-                 JOR,KAZ,KEN,KIR,KWT,KGZ,LAO,LVA,LBN,LSO,LBR,LBY,LIE,LTU,LUX,MAC,MKD,MDG,MWI,
-                 MYS,MDV,MLI,MLT,MHL,MTQ,MRT,MUS,MYT,MEX,FSM,MDA,MCO,MNG,MNE,MSR,MAR,MOZ,MMR,
-                 NAM,NRU,NPL,NLD,ANT,NCL,NZL,NIC,NER,NGA,NIU,NFK,PRK,MNP,NOR,OMN,PAK,PLW,PSE,
-                 PAN,PNG,PRY,PER,PHL,PCN,POL,PRT,PRI,QAT,ROU,RUS,RWA,REU,BLM,SHN,KNA,LCA,MAF,
-                 SPM,WSM,SMR,SAU,SEN,SRB,SYC,SLE,SGP,SVK,SVN,SLB,SOM,ZAF,SGS,KOR,ESP,LKA,VCT,
-                 SDN,SUR,SJM,SWZ,SWE,CHE,SYR,STP,TWN,TJK,TZA,THA,TLS,TGO,TKL,TON,TTO,TUN,TUR,
-                 TKM,TCA,TUV,UMI,VIR,UGA,UKR,ARE,GBR,USA,URY,UZB,VUT,GUY,VEN,VNM,WLF,ESH,YEM,
-                 ZMB,ZWE,ALA'
+                 'countries'  => 'ALL'
             ),
             'DIN' => array(
                  'name' => 'Diners',
-                 'countries'  => 'AFG,ALB,DZA,ASM,AND,AGO,AIA,ATA,ATG,ARG,ARM,ABW,AUS,AUT,AZE,BHS,
-                 BHR,BGD,BRB,BLR,BEL,BLZ,BEN,BMU,BTN,BOL,BIH,BWA,BVT,BRA,IOT,VGB,BRN,BGR,BFA,BDI,
-                 KHM,CMR,CAN,CPV,CYM,CAF,TCD,CHL,CHN,CXR,CCK,COL,COM,COG,COD,COK,CRI,HRV,CUB,CYP,
-                 CZE,CIV,DNK,DJI,DMA,DOM,ECU,EGY,SLV,GNQ,ERI,EST,ETH,FLK,FRO,FJI,FIN,FRA,GUF,PYF,
-                 ATF,GAB,GMB,GEO,DEU,GHA,GIB,GRC,GRL,GRD,GLD,GUM,GTM,GGY,HTI,HMD,VAT,GIN,GNB,HND,
-                 HKG,HUN,ISL,IND,IDN,IRN,IRQ,IRL,IMN,ISR,ITA,JAM,JPN,JEY,JOR,KAZ,KEN,KIR,KWT,KGZ,
-                 LAO,LVA,LBN,LSO,LBR,LBY,LIE,LTU,LUX,MAC,MKD,MDG,MWI,MYS,MDV,MLI,MLT,MHL,MTQ,MRT,
-                 MUS,MYT,MEX,FSM,MDA,MCO,MNG,MNE,MSR,MAR,MOZ,MMR,NAM,NRU,NPL,NLD,ANT,NCL,NZL,NIC,
-                 NER,NGA,NIU,NFK,PRK,MNP,NOR,OMN,PAK,PLW,PSE,PAN,PNG,PRY,PER,PHL,PCN,POL,PRT,PRI,
-                 QAT,ROU,RUS,RWA,REU,BLM,SHN,KNA,LCA,MAF,SPM,WSM,SMR,SAU,SEN,SRB,SYC,SLE,SGP,SVK,
-                 SVN,SLB,SOM,ZAF,SGS,KOR,ESP,LKA,VCT,SDN,SUR,SJM,SWZ,SWE,CHE,SYR,STP,TWN,TJK,TZA,
-                 THA,TLS,TGO,TKL,TON,TTO,TUN,TUR,TKM,TCA,TUV,UMI,VIR,UGA,UKR,ARE,GBR,USA,URY,UZB,
-                 VUT,GUY,VEN,VNM,WLF,ESH,YEM,ZMB,ZWE,ALA'
+                 'countries'  => 'ALL'
             ),
             'JCB' => array(
                  'name' => 'JCB',
-                 'countries'  => 'AFG,ALB,DZA,ASM,AND,AGO,AIA,ATA,ATG,ARG,ARM,ABW,AUS,AUT,AZE,BHS,
-                 BHR,BGD,BRB,BLR,BEL,BLZ,BEN,BMU,BTN,BOL,BIH,BWA,BVT,BRA,IOT,VGB,BRN,BGR,BFA,BDI,
-                 KHM,CMR,CAN,CPV,CYM,CAF,TCD,CHL,CHN,CXR,CCK,COL,COM,COG,COD,COK,CRI,HRV,CUB,CYP,
-                 CZE,CIV,DNK,DJI,DMA,DOM,ECU,EGY,SLV,GNQ,ERI,EST,ETH,FLK,FRO,FJI,FIN,FRA,GUF,PYF,
-                 ATF,GAB,GMB,GEO,DEU,GHA,GIB,GRC,GRL,GRD,GLD,GUM,GTM,GGY,HTI,HMD,VAT,GIN,GNB,HND,
-                 HKG,HUN,ISL,IND,IDN,IRN,IRQ,IRL,IMN,ISR,ITA,JAM,JPN,JEY,JOR,KAZ,KEN,KIR,KWT,KGZ,
-                 LAO,LVA,LBN,LSO,LBR,LBY,LIE,LTU,LUX,MAC,MKD,MDG,MWI,MYS,MDV,MLI,MLT,MHL,MTQ,MRT,
-                 MUS,MYT,MEX,FSM,MDA,MCO,MNG,MNE,MSR,MAR,MOZ,MMR,NAM,NRU,NPL,NLD,ANT,NCL,NZL,NIC,
-                 NER,NGA,NIU,NFK,PRK,MNP,NOR,OMN,PAK,PLW,PSE,PAN,PNG,PRY,PER,PHL,PCN,POL,PRT,PRI,
-                 QAT,ROU,RUS,RWA,REU,BLM,SHN,KNA,LCA,MAF,SPM,WSM,SMR,SAU,SEN,SRB,SYC,SLE,SGP,SVK,
-                 SVN,SLB,SOM,ZAF,SGS,KOR,ESP,LKA,VCT,SDN,SUR,SJM,SWZ,SWE,CHE,SYR,STP,TWN,TJK,TZA,
-                 THA,TLS,TGO,TKL,TON,TTO,TUN,TUR,TKM,TCA,TUV,UMI,VIR,UGA,UKR,ARE,GBR,USA,URY,UZB,
-                 VUT,GUY,VEN,VNM,WLF,ESH,YEM,ZMB,ZWE,ALA'
+                 'countries'  => 'ALL'
             ),
             'GCB' => array(
                  'name' => 'Carte Bleue by Visa',
@@ -188,6 +147,21 @@ class SkrillPaymentCore
             'ALI' => array(
                  'name' => 'Alipay',
                  'countries'  => 'CHN'
+            ),
+            'NTL' => array(
+                 'name' => 'Neteller',
+                 'countries'  => 'ALB,DZA,ASM,AND,AGO,AIA,ATA,ATG,ARG,ABW,AUS,AUT,AZE,BHS,
+                 BHR,BGD,BRB,BLR,BEL,BLZ,BEN,BMU,BOL,BIH,BWA,BRA,IOT,VGB,BRN,BGR,BFA,BDI,
+                 KHM,CMR,CAN,CPV,CYM,CAF,TCD,CHL,CXR,COL,COM,COG,CRI,HRV,CYP,CZE,DNK,DJI,
+                 DMA,DOM,ECU,EGY,SLV,GNQ,EST,ETH,FLK,FRO,FJI,FIN,FRA,GUF,PYF,ATF,GAB,GMB,
+                 GEO,DEU,GHA,GIB,GRC,GRL,GRD,GLD,GTM,GGY,HTI,VAT,GNB,HND,HKG,HUN,ISL,IND,
+                 IDN,IRL,IMN,ISR,ITA,JAM,JPN,JEY,JOR,KEN,KIR,KWT,LAO,LVA,LBN,LSO,LIE,LTU,
+                 LUX,MAC,MKD,MDG,MWI,MYS,MDV,MLI,MLT,MTQ,MRT,MUS,MYT,MEX,MDA,MCO,MNE,MSR,
+                 MAR,MOZ,NAM,NRU,NPL,NLD,ANT,NCL,NZL,NIC,NER,NGA,NIU,NFK,NOR,OMN,PSE,PAN,
+                 PNG,PRY,PER,PHL,PCN,POL,PRT,QAT,ROU,RUS,RWA,REU,BLM,SHN,KNA,LCA,MAF,SPM,
+                 WSM,SMR,SAU,SEN,SRB,SYC,SGP,SVK,SVN,SLB,ZAF,KOR,ESP,LKA,VCT,SUR,SJM,SWZ,
+                 SWE,CHE,STP,TWN,TZA,THA,TGO,TKL,TON,TTO,TUN,TUR,TCA,TUV,UMI,UKR,ARE,GBR,
+                 URY,VUT,GUY,VEN,VNM,WLF,ESH,ZMB,ALA,SSD'
             )
     );
 
@@ -399,7 +373,7 @@ class SkrillPaymentCore
      */
     public static function isCountryNotSupport($countryCode)
     {
-        $notSupportCountries = array('AFG','MMR','NGA','PRK','SDN','SYR','SOM','YEM');
+        $notSupportCountries = array('AFG','CUB','ERI','IRN','IRQ','KGZ','LBY','PRK','SDN','SSD','SYR');
         if (in_array($countryCode, $notSupportCountries)) {
               return true;
         } else {

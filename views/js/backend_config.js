@@ -21,7 +21,6 @@ $(document).ready(function(){
 		'acc',
 		'vsa',
 		'msc',
-		'vsd',
 		'vse',
 		'mae',
 		'amx',
@@ -35,7 +34,6 @@ $(document).ready(function(){
 		'gir',
 		'did',
 		'sft',
-		'ent',
 		'ebt',
 		'idl',
 		'npy',
@@ -43,7 +41,8 @@ $(document).ready(function(){
 		'pwy',
 		'epy',
 		'glu',	
-		'ali',	
+		'ali',
+		'ntl'	
 	];
 
 	var list_cards = [
@@ -88,8 +87,26 @@ $(document).ready(function(){
 		{
 		    for(i=0; i<list_cards.length;i++){
 		    	payment = list_cards[i].toUpperCase();
+
 		    	$("#SKRILL_"+payment+"_MODE_on").removeAttr("checked");
 		    	$("#SKRILL_"+payment+"_MODE_off").attr("checked", true);
+
+				var active = $("input:radio[name='SKRILL_"+payment+"_ACTIVE']:checked").val();
+				var mode = $("input:radio[name='SKRILL_"+payment+"_MODE']:checked").val();
+
+		    	$('<input>').attr({
+				    type: 'hidden',
+				    id: 'HIDDEN_'+payment+'_ACTIVE',
+				    name: 'SKRILL_'+payment+'_ACTIVE',
+				    value: active,
+				}).insertAfter("#SKRILL_"+payment+"_ACTIVE_on");
+
+				$('<input>').attr({
+				    type: 'hidden',
+				    id: 'HIDDEN_'+payment+'_MODE',
+				    name: 'SKRILL_'+payment+'_MODE',
+				    value: mode,
+				}).insertAfter("#SKRILL_"+payment+"_MODE_on");
 
 				$("#SKRILL_"+payment+"_ACTIVE_on").attr("disabled", true);
 		    	$("#SKRILL_"+payment+"_ACTIVE_off").attr("disabled", true);
@@ -97,20 +114,6 @@ $(document).ready(function(){
 		    	$("#SKRILL_"+payment+"_MODE_off").attr("disabled", true);
 		    	$("#SKRILL_"+payment+"_SORT_on").attr("disabled", true);
 		    	$("#SKRILL_"+payment+"_SORT_off").attr("disabled", true);		    	
-
-		    	$('<input>').attr({
-				    type: 'hidden',
-				    id: 'HIDDEN_'+payment+'_ACTIVE',
-				    name: 'SKRILL_'+payment+'_ACTIVE',
-				    value: '0',
-				}).insertAfter("#SKRILL_"+payment+"_ACTIVE_on");
-
-				$('<input>').attr({
-				    type: 'hidden',
-				    id: 'HIDDEN_'+payment+'MODE',
-				    name: 'SKRILL_'+payment+'_MODE',
-				    value: '0',
-				}).insertAfter("#SKRILL_"+payment+"_MODE_on");
 		    }
 		}	
 	}

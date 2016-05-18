@@ -20,7 +20,7 @@
 
 require_once(dirname(__FILE__).'/paymentAbstract.php');
  
-class SkrillPaymentEntModuleFrontController extends SkrillPaymentAbstractModuleFrontController
+class SkrillPaymentNTLModuleFrontController extends SkrillPaymentAbstractModuleFrontController
 {
-    protected $payment_method = 'ENT';
+    protected $payment_method = 'NTL';
 }

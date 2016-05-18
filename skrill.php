@@ -36,7 +36,7 @@ class Skrill extends PaymentModule
     {
         $this->name = 'skrill';
         $this->tab = 'payments_gateways';
-        $this->version = '1.0.1';
+        $this->version = '1.0.6';
         $this->author = 'Skrill';
 
         $this->bootstrap = true;
@@ -143,7 +143,6 @@ class Skrill extends PaymentModule
             || !Configuration::deleteByName('SKRILL_ACC_ACTIVE')
             || !Configuration::deleteByName('SKRILL_VSA_ACTIVE')
             || !Configuration::deleteByName('SKRILL_MSC_ACTIVE')
-            || !Configuration::deleteByName('SKRILL_VSD_ACTIVE')
             || !Configuration::deleteByName('SKRILL_VSE_ACTIVE')
             || !Configuration::deleteByName('SKRILL_MAE_ACTIVE')
             || !Configuration::deleteByName('SKRILL_AMX_ACTIVE')
@@ -165,13 +164,13 @@ class Skrill extends PaymentModule
             || !Configuration::deleteByName('SKRILL_EPY_ACTIVE')
             || !Configuration::deleteByName('SKRILL_GLU_ACTIVE')
             || !Configuration::deleteByName('SKRILL_ALI_ACTIVE')
+            || !Configuration::deleteByName('SKRILL_NTL_ACTIVE')
 
             || !Configuration::deleteByName('SKRILL_WLT_MODE')
             || !Configuration::deleteByName('SKRILL_PSC_MODE')
             || !Configuration::deleteByName('SKRILL_ACC_MODE')
             || !Configuration::deleteByName('SKRILL_VSA_MODE')
             || !Configuration::deleteByName('SKRILL_MSC_MODE')
-            || !Configuration::deleteByName('SKRILL_VSD_MODE')
             || !Configuration::deleteByName('SKRILL_VSE_MODE')
             || !Configuration::deleteByName('SKRILL_MAE_MODE')
             || !Configuration::deleteByName('SKRILL_AMX_MODE')
@@ -193,6 +192,7 @@ class Skrill extends PaymentModule
             || !Configuration::deleteByName('SKRILL_EPY_MODE')
             || !Configuration::deleteByName('SKRILL_GLU_MODE')
             || !Configuration::deleteByName('SKRILL_ALI_MODE')
+            || !Configuration::deleteByName('SKRILL_NTL_MODE')
 
             || !Configuration::deleteByName('SKRILL_FLEXIBLE_SORT')
             || !Configuration::deleteByName('SKRILL_WLT_SORT')
@@ -200,7 +200,6 @@ class Skrill extends PaymentModule
             || !Configuration::deleteByName('SKRILL_ACC_SORT')
             || !Configuration::deleteByName('SKRILL_VSA_SORT')
             || !Configuration::deleteByName('SKRILL_MSC_SORT')
-            || !Configuration::deleteByName('SKRILL_VSD_SORT')
             || !Configuration::deleteByName('SKRILL_VSE_SORT')
             || !Configuration::deleteByName('SKRILL_MAE_SORT')
             || !Configuration::deleteByName('SKRILL_AMX_SORT')
@@ -222,6 +221,7 @@ class Skrill extends PaymentModule
             || !Configuration::deleteByName('SKRILL_EPY_SORT')
             || !Configuration::deleteByName('SKRILL_GLU_SORT')
             || !Configuration::deleteByName('SKRILL_ALI_SORT')
+            || !Configuration::deleteByName('SKRILL_NTL_SORT')
 
             || !$this->unregisterHook('payment')
             || !$this->unregisterHook('paymentReturn')
@@ -268,7 +268,7 @@ class Skrill extends PaymentModule
     {
         $versionData = array();
         $versionData['transaction_mode'] = 'LIVE';
-        $versionData['ip_address'] = $_SERVER['SERVER_ADDR'].'25';
+        $versionData['ip_address'] = $_SERVER['SERVER_ADDR'];
         $versionData['shop_version'] = _PS_VERSION_;
         $versionData['plugin_version'] = $this->version;
         $versionData['client'] = 'Skrill';
@@ -281,28 +281,10 @@ class Skrill extends PaymentModule
 
     public function hookdisplayAdminOrder()
     {
-
         $orderId =Tools::getValue('id_order');
-        $sql = "SELECT * FROM skrill_order_ref WHERE id_order ='".$orderId."'";
-
+        $sql = "SELECT * FROM skrill_order_ref WHERE id_order ='".(int)$orderId."'";
         $row = Db::getInstance()->getRow($sql);
         if ($row) {
-            if (Tools::isSubmit('skrillUpdateOrder') && $row['order_status'] != $this->refundedStatus) {
-                $fieldParams = $this->getSkrillCredentials();
-                $fieldParams['type'] = 'mb_trn_id';
-                $fieldParams['id'] = $row['ref_id'];
-                $paymentResult = '';
-                $isPaymentAccepted = SkrillPaymentCore::isPaymentAccepted($fieldParams, $paymentResult);
-
-                if ($isPaymentAccepted) {
-                    $responseUpdateOrder = SkrillPaymentCore::getResponseArray($paymentResult);
-                    $this->updateTransLogStatus($row['ref_id'], $responseUpdateOrder['status']);
-
-                    $sql = "SELECT * FROM skrill_order_ref WHERE id_order ='".$orderId."'";
-                    $row = Db::getInstance()->getRow($sql);
-                }
-            }
-
             $paymentInfo = array();
             $paymentInfo['name'] = $this->getFrontendPaymentLocale($row['payment_method']);
             $isSkrill = strpos($paymentInfo['name'], 'Skrill');
@@ -325,7 +307,7 @@ class Skrill extends PaymentModule
             $buttonUpdateOrder = ($row['order_status'] == $this->refundedStatus) ? false : true;
 
             $this->context->smarty->assign(array(
-                'orderId'		=> $orderId,
+                'orderId'		=> (int)$orderId,
                 'paymentInfo' => $paymentInfo,
                 'buttonUpdateOrder'	=> $buttonUpdateOrder
             ));
@@ -351,15 +333,17 @@ class Skrill extends PaymentModule
 
     private function getCountryIdByIso($countryIso2)
     {
-        $sql = "SELECT `id_country` FROM `"._DB_PREFIX_."country` WHERE `iso_code` = '".$countryIso2."'";
+        $sql = "SELECT `id_country` FROM `"._DB_PREFIX_."country` WHERE `iso_code` = '".pSQL($countryIso2)."'";
         $result = Db::getInstance()->getRow($sql);
         return (int)$result['id_country'];
     }
 
     public function hookdisplayInvoice()
     {
-        $successMessage = null;
-        $errorMessage = null;
+        $orderId =Tools::getValue('id_order');
+        $order = new Order((int)$orderId);
+        $successMessage = '';
+        $errorMessage = '';
 
         if (isset($this->context->cookie->skrill_status_refund)) {
             if ($this->context->cookie->skrill_status_refund) {
@@ -367,18 +351,36 @@ class Skrill extends PaymentModule
             } else {
                 $errorMessage = "refund";
             }
+            unset ($this->context->cookie->skrill_status_refund);
         }
+        $sql = "SELECT * FROM skrill_order_ref WHERE id_order ='".(int)$orderId."'";
+        $row = Db::getInstance()->getRow($sql);
+        
+        if ($row) {
+            if (Tools::isSubmit('skrillUpdateOrder') && $row['order_status'] != $this->refundedStatus) {
+                $fieldParams = $this->getSkrillCredentials();
+                $fieldParams['type'] = 'mb_trn_id';
+                $fieldParams['id'] = $row['ref_id'];
+                $paymentResult = '';
+                $isPaymentAccepted = SkrillPaymentCore::isPaymentAccepted($fieldParams, $paymentResult);
 
-        $orderId =Tools::getValue('id_order');
-        $order = new Order((int)$orderId);
+                if ($isPaymentAccepted) {
+                    $responseUpdateOrder = SkrillPaymentCore::getResponseArray($paymentResult);
+                    $this->updateTransLogStatus($row['ref_id'], $responseUpdateOrder['status']);
+                    $successMessage = "updateOrder";
 
+                    $sql = "SELECT * FROM skrill_order_ref WHERE id_order ='".(int)$orderId."'";
+                    $row = Db::getInstance()->getRow($sql);
+                } else {
+                    $errorMessage = "updateOrder";
+                }
+            }
+        }
         $this->context->smarty->assign(array(
            'module' => $order->module,
            'successMessage' => $successMessage,
            'errorMessage' => $errorMessage
         ));
-
-        unset ($this->context->cookie->skrill_status_refund);
 
         return $this->display(__FILE__, 'views/templates/hook/displayStatusOrder.tpl');
     }
@@ -396,25 +398,12 @@ class Skrill extends PaymentModule
             }
         }
 
-        $langobj = new Language((int)($params['cart']->id_lang));
-        $langs = $langobj->iso_code;
-        
-        switch ($langs) {
-            case 'de':
-                $lang = $langs;
-                break;
-
-            default:
-                $lang='en';
-        }
-
         $address = new Address((int)$this->context->cart->id_address_delivery);
         $country = new Country($address->id_country);
         $countryCode = $country->iso_code;
     
         $this->context->smarty->assign(array(
            'payments'			=> $this->getEnabledPayment($countryCode),
-           'lang'				=> $lang,
            'this_path' 		=> $this->_path,
            'this_path_ssl' 	=> Tools::getShopDomainSsl(true, true).__PS_BASE_URI__.'modules/'.$this->name.'/'
         ));
@@ -509,25 +498,24 @@ class Skrill extends PaymentModule
 
     }
 
-    public function refundOrder($id, &$refId, $refundType = 'refund')
+    public function refundOrder($params, &$refId, $refundType = 'refund')
     {
-        if ($refundType == "fraud") {
-            $sql = "SELECT * FROM skrill_order_ref WHERE ref_id ='".$id."'";
-        } else {
-            $sql = "SELECT * FROM skrill_order_ref WHERE id_order ='".$id."'";
+        if ($refundType != "fraud") {
+            $sql = "SELECT * FROM skrill_order_ref WHERE id_order ='".(int)$params['id_order']."'";
+            $row = Db::getInstance()->getRow($sql);
         }
-        $row = Db::getInstance()->getRow($sql);
-        if ($row) {
-            $refId = $row['ref_id'];
-            $fieldParams = $this->getSkrillCredentials();
-            $fieldParams['mb_transaction_id'] = $row['ref_id'];
-            $fieldParams['amount'] = $row['amount'];
 
-            $refundResult = SkrillPaymentCore::doRefund('prepare', $fieldParams);
-            $sid = (string) $refundResult->sid;
+        $refId = $row['ref_id'] ? $row['ref_id'] : $params['mb_transaction_id'];
+        $fieldParams = $this->getSkrillCredentials();
+        $fieldParams['mb_transaction_id'] = $row['ref_id']? $row['ref_id'] : $params['mb_transaction_id'];
+        $fieldParams['amount'] = $row['amount']? $row['amount'] : $params['amount'];
 
-            $refundResult = SkrillPaymentCore::doRefund('refund', $sid);
-        } else {
+        $refundResult = SkrillPaymentCore::doRefund('prepare', $fieldParams);
+        $sid = (string) $refundResult->sid;
+
+        $refundResult = SkrillPaymentCore::doRefund('refund', $sid);
+
+        if (!$refundResult) {
             $refundResult['status'] = "error";
         }
         
@@ -541,7 +529,7 @@ class Skrill extends PaymentModule
         if ($order->module == "skrill" && $order->current_state == Configuration::get('PS_OS_PAYMENT')
             && $params['newOrderStatus']->id == Configuration::get('PS_OS_REFUND')) {
             $refId = '';
-            $refundResult = $this->refundOrder($params['id_order'], $refId, $order);
+            $refundResult = $this->refundOrder($params, $refId, $order);
 
             $refundStatus = (string) $refundResult->status;
 
@@ -563,7 +551,7 @@ class Skrill extends PaymentModule
 
     public function updateTransLogStatus($refId, $orderStatus)
     {
-        $sql = "UPDATE skrill_order_ref SET order_status = '".$orderStatus."' where ref_id = '".$refId."'";
+        $sql = "UPDATE skrill_order_ref SET order_status = '".pSQL($orderStatus)."' where ref_id = '".pSQL($refId)."'";
         if (!Db::getInstance()->execute($sql)) {
             die('Erreur etc.');
         }
@@ -612,13 +600,6 @@ class Skrill extends PaymentModule
                     $paymentLocale = "MasterCard";
                 } else {
                     $paymentLocale = $this->l('SKRILL_FRONTEND_PM_MSC');
-                }
-                break;
-            case 'SKRILL_FRONTEND_PM_VSD':
-                if ($this->l('SKRILL_FRONTEND_PM_VSD') == "SKRILL_FRONTEND_PM_VSD") {
-                    $paymentLocale = "Visa Delta/Debit";
-                } else {
-                    $paymentLocale = $this->l('SKRILL_FRONTEND_PM_VSD');
                 }
                 break;
             case 'SKRILL_FRONTEND_PM_VSE':
@@ -768,6 +749,13 @@ class Skrill extends PaymentModule
                     $paymentLocale = $this->l('SKRILL_FRONTEND_PM_ALI');
                 }
                 break;
+            case 'SKRILL_FRONTEND_PM_NTL':
+                if ($this->l('SKRILL_FRONTEND_PM_NTL') == "SKRILL_FRONTEND_PM_NTL") {
+                    $paymentLocale = "Neteller";
+                } else {
+                    $paymentLocale = $this->l('SKRILL_FRONTEND_PM_NTL');
+                }
+                break;
             default:
                 if ($this->l('SKRILL_FRONTEND_PM_FLEXIBLE') == "SKRILL_FRONTEND_PM_FLEXIBLE") {
                     $paymentLocale = "All Cards and Alternative Payment Methods";
@@ -823,13 +811,6 @@ class Skrill extends PaymentModule
                     $paymentLocale = "MasterCard";
                 } else {
                     $paymentLocale = $this->l('SKRILL_BACKEND_PM_MSC');
-                }
-                break;
-            case 'SKRILL_BACKEND_PM_VSD':
-                if ($this->l('SKRILL_BACKEND_PM_VSD') == "SKRILL_BACKEND_PM_VSD") {
-                    $paymentLocale = "Visa Delta/Debit";
-                } else {
-                    $paymentLocale = $this->l('SKRILL_BACKEND_PM_VSD');
                 }
                 break;
             case 'SKRILL_BACKEND_PM_VSE':
@@ -977,6 +958,13 @@ class Skrill extends PaymentModule
                     $paymentLocale = "Alipay";
                 } else {
                     $paymentLocale = $this->l('SKRILL_BACKEND_PM_ALI');
+                }
+                break;
+            case 'SKRILL_BACKEND_PM_NTL':
+                if ($this->l('SKRILL_BACKEND_PM_NTL') == "SKRILL_BACKEND_PM_NTL") {
+                    $paymentLocale = "Neteller";
+                } else {
+                    $paymentLocale = $this->l('SKRILL_BACKEND_PM_NTL');
                 }
                 break;
             default:
@@ -1280,7 +1268,7 @@ class Skrill extends PaymentModule
     public function getContent()
     {
         if (Tools::isSubmit('btnSubmit')) {
-            $this->postProcess();
+            $this->validateConfigurationPost();
         } else {
             $this->html .= '<br />';
         }
@@ -1295,7 +1283,55 @@ class Skrill extends PaymentModule
         return $this->html;
     }
 
-    private function postProcess()
+    private function validateConfigurationPost()
+    {
+        if (Tools::isSubmit('btnSubmit')) {
+            $locale = $this->getConfigLocale();
+            $isRequired = false;
+            $fieldsRequired = array();
+
+            if (trim(Tools::getValue('SKRILL_GENERAL_MERCHANTID')) == '') {
+                $fieldsRequired[] = $locale['mid']['label'];
+                $isRequired = true;
+            }
+            if (trim(Tools::getValue('SKRILL_GENERAL_MERCHANTACCOUNT')) == '') {
+                $fieldsRequired[] = $locale['merchant']['label'];
+                $isRequired = true;
+            }
+            if (trim(Tools::getValue('SKRILL_GENERAL_RECIPENT')) == '') {
+                $fieldsRequired[] = $locale['recepient']['label'];
+                $isRequired = true;
+            }
+            if (trim(Tools::getValue('SKRILL_GENERAL_LOGOURL')) == '') {
+                $fieldsRequired[] = $locale['logourl']['label'];
+                $isRequired = true;
+            }
+            if (trim(Tools::getValue('SKRILL_GENERAL_APIPASS')) == ''
+            && trim(Configuration::get('SKRILL_GENERAL_APIPASS')) == '') {
+                $fieldsRequired[] =  $locale['apipass']['label'];
+                $isRequired = true;
+            }
+            if (trim(Tools::getValue('SKRILL_GENERAL_SECRETWORD')) == ''
+            && trim(Configuration::get('SKRILL_GENERAL_SECRETWORD')) == '') {
+                $fieldsRequired[] =  $locale['secretword']['label'];
+                $isRequired = true;
+            }
+
+            if ($isRequired) {
+                $warning = implode(', ', $fieldsRequired) . ' ';
+                if ($this->l('ERROR_MANDATORY') == "ERROR_MANDATORY") {
+                    $warning .= "is required. please fill out this field";
+                } else {
+                    $warning .= $this->l('ERROR_MANDATORY');
+                }
+                $this->html .= $this->displayWarning($warning);
+            } else {
+                $this->configurationPost();
+            }
+        }
+    }
+
+    private function configurationPost()
     {
         if (Tools::isSubmit('btnSubmit')) {
             $apiPass = Tools::getValue('SKRILL_GENERAL_APIPASS');
@@ -1308,7 +1344,7 @@ class Skrill extends PaymentModule
             Configuration::updateValue('SKRILL_GENERAL_LOGOURL', Tools::getValue('SKRILL_GENERAL_LOGOURL'));
             Configuration::updateValue('SKRILL_GENERAL_SHOPURL', Tools::getValue('SKRILL_GENERAL_SHOPURL'));
             if (trim($apiPass) != '') {
-                Configuration::updateValue('SKRILL_GENERAL_APIPASS', md5(Tools::getValue('SKRILL_GENERAL_APIPASS')));
+                Configuration::updateValue('SKRILL_GENERAL_APIPASS', md5($apiPass));
             }
             if (trim($secretWord) != '') {
                 Configuration::updateValue('SKRILL_GENERAL_SECRETWORD', md5($secretWord));
@@ -1552,13 +1588,19 @@ class Skrill extends PaymentModule
             $locale['active']['flexible']['desc'] =
                     "When enabled to show separately all other payment methods
                     will automatically default to 'disabled'.";
+            $locale['active']['acc']['desc'] =
+                    "When enabled to show separately all other payment methods
+                    will automatically default to 'disabled'.";
+            $locale['mode']['acc']['desc'] =
+                    "When enabled to show separately all other payment methods
+                    will automatically default to 'disabled'.";
         } else {
             $locale['active']['flexible']['desc'] = $this->l('SKRILL_BACKEND_TT_APM');
+            $locale['active']['acc']['desc'] = $this->l('SKRILL_BACKEND_TT_APM');
+            $locale['mode']['acc']['desc'] = $this->l('SKRILL_BACKEND_TT_APM');
         }
 
         $locale['save'] = $this->l('BACKEND_CH_SAVE') == "BACKEND_CH_SAVE" ? "Save" : $this->l('BACKEND_CH_SAVE');
-        $locale['mode']['acc']['desc'] = "When enabled to show separately all other payment 
-        methods will automatically default to 'disabled'.";
         $locale['active']['psc']['desc'] = 'American Samoa, Austria, Belgium, Canada, Croatia,
                 Cyprus, Czech Republic, Denmark, Finland, France, Germany, Greece, Guam,
                 Hungary, Ireland, Italy, Latvia, Luxembourg, Malta, Mexico, Netherlands,
@@ -1584,9 +1626,29 @@ class Skrill extends PaymentModule
         $locale['active']['epy']['desc'] = 'Bulgaria';
         $locale['active']['glu']['desc'] = 'Sweden, Finland, Estonia, Denmark, Spain, Poland, Italy,
                 France, Germany, Portugal, Austria, Latvia, Lithuania, Netherlands';
-        $locale['active']['ali']['desc'] = 'Consumer location: China only.
+        
+        if ($this->l('SKRILL_BACKEND_TT_ALI') == "SKRILL_BACKEND_TT_ALI") {
+            $locale['active']['ali']['desc'] = 'Consumer location: China only.
                 Merchant location: This is available for merchants in all countries except China.';
+        } else {
+            $locale['active']['ali']['desc'] = $this->l('SKRILL_BACKEND_TT_ALI');
+        }
 
+        $locale['active']['ntl']['desc'] = "All except for
+            Afghanistan, Armenia, Bhutan, Bouvet Island,
+            Myanmar, China, (Keeling) Islands, Democratic
+            Republic of Congo, Cook Islands, Cuba, Eritrea,
+            South Georgia and the South Sandwich Islands,
+            Guam, Guinea, Territory of Heard Island and
+            McDonald Islands, Iran, Iraq, Cote d'Ivoire,
+            Kazakhstan, North Korea, Kyrgyzstan, Liberia,
+            Libya, Mongolia, Northern Mariana Islands,
+            Federated States of Micronesia, Marshall
+            Islands, Palau, Pakistan, East Timor, Puerto Rico,
+            Sierra Leone, Somalia, Zimbabwe, Sudan, Syria,
+            Tajikistan, Turkmenistan, Uganda, United
+            States, US Virgin Islands, Uzbekistan, and Yemen";
+            
         return $locale;
     }
 
